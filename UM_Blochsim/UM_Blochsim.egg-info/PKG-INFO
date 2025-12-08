@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: UM_Blochsim
+Version: 1.0
+Author: Christopher Louly
+Author-email: clouly@umich.edu
+Requires-Dist: numpy
+Provides-Extra: dev
+Requires-Dist: Cython>3.0.0; extra == "dev"
+Requires-Dist: build; extra == "dev"
+Requires-Dist: setuptools; extra == "dev"
+Dynamic: author
+Dynamic: author-email
