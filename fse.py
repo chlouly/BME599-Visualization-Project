@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cm
 
-mpl.rcParams['animation.ffmpeg_path'] = '/opt/homebrew/bin/ffmpeg'
+mpl.rcParams['animation.ffmpeg_path'] = "/usr/bin/ffmpeg"
 
 from pulsegen import *
 
@@ -37,8 +37,7 @@ def main():
     T2 = 30
 
     # Create B1
-    B = fse_pulsetrain(T, PW, ETL, TE, dt)
-    B = initial_pad(B, time_pad, dt)
+    B, T = fse_pulsetrain(PW, ETL, TE, dt, start_pad=time_pad)
 
     ntime = B.shape[0]
 
@@ -56,24 +55,24 @@ def main():
         plt.legend()
         plt.show()
 
-    # Simulate
-    plotM=True
-    M = bs.blochsim_eul(B, T1, T2, dt, plot=plotM)
+    # # Simulate
+    # plotM=True
+    # M = bs.blochsim_eul(B, T1, T2, dt, plot=plotM)
 
-    # Display Signal
-    S = np.linalg.norm(M[:, 0:2], axis=1)
+    # # Display Signal
+    # S = np.linalg.norm(M[:, 0:2], axis=1)
 
-    # Plot Signal
-    T2_sig = np.exp(-time / T2)
+    # # Plot Signal
+    # T2_sig = np.exp(-time / T2)
 
-    plotS=False
-    if plotS:
-        plt.plot(time, S, label="Observed Signal")
-        plt.plot(time, T2_sig, label="T2 Decay Curve")
-        plt.xlabel("Time [ms]")
-        plt.ylabel("Signal")
-        plt.legend()
-        plt.show()
+    # plotS=False
+    # if plotS:
+    #     plt.plot(time, S, l'/opt/homebrew/bin/ffmpeg'abel="Observed Signal")
+    #     plt.plot(time, T2_sig, label="T2 Decay Curve")
+    #     plt.xlabel("Time [ms]")
+    #     plt.ylabel("Signal")
+    #     plt.legend()
+    #     plt.show()
 
 
 
@@ -84,18 +83,19 @@ def main():
     vox_y = 10**-3
     vox_z = 10**-3
     G_dur = 30
-    G_amp = 0.0005
+    G_amp = 0.005
 
     num_iso = 50
     iso_pos = np.zeros((num_iso, 3))
-    iso_pos[:, 2] = np.linspace(-vox_z / 2, vox_z / 2, num_iso)
+    iso_pos[:, 0] = np.linspace(-vox_z / 2, vox_z / 2, num_iso)
 
     # Make Gradient
     # TODO: Make Gradient Waveform
-    G_fe = fse_freq_enc_grad(G_amp, G_dur, T, PW, ETL, TE, dt)
-    G = np.zeros((G_fe.shape[0], 3))
-    G[:, 2] = G_fe
-    G = initial_pad(G, time_pad, dt)
+    # G_fe = fse_freq_enc_grad(G_amp, G_dur, T, PW, ETL, TE, dt)
+    # G = np.zeros((G_fe.shape[0], 3))
+    # G[:, 2] = G_fe
+    # G = initial_pad(G, time_pad, dt)
+    G, T_G = fse_freq_enc_grad(G_amp, G_dur, ETL, TE, dt, start_pad=time_pad, dim=0)
 
     # Plot G (for sanity)
     plotG=True
@@ -113,6 +113,7 @@ def main():
     for n in range(num_iso):
         B_eff = B
         B_eff[:, 2] += np.sum(G * iso_pos[n, :], axis=1)
+        print(B_eff.shape)
         M_all[:, :, n] = bs.blochsim_rk4(B_eff, T1, T2, dt)
 
     # Average over all isochromats:

@@ -1,0 +1,4 @@
+*pycache*
+*.so
+build/*
+dist

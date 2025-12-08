@@ -13,13 +13,18 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_mag_3D(M, save_path=None, display=False, dsamp=1):
+def plot_iso_3D(M, save_path=None, display=False, dsamp=1):
     # Quick Check, if we do not need to display or save, nothing to be done.
     if (save_path == None) and (display == False):
         return
 
     # Get Data Dimensions
-    ntime, _, num_iso = np.shape(M)
+    if len(M.shape) == 3:
+        ntime, _, num_iso = np.shape(M)
+    elif len(M.shape) == 2:
+        ntime, _ = np.shape(M)
+        num_iso = 1
+        M = np.reshape(M, (ntime, 3, num_iso))
 
     # Define a vector of color values for the arrows
     color_vec = np.linspace(0, 1, num_iso)
@@ -69,9 +74,8 @@ def plot_mag_3D(M, save_path=None, display=False, dsamp=1):
     # Save the animation to the path given (if any)
     if save_path != None:
         anim.save(save_path, fps=30, dpi=150)
+        print(f"Animation saved to: {save_path}")
 
     # Show the animation (if desired)
     if display:
         plt.show()
-
-    pass
