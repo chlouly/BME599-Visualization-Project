@@ -1,6 +1,11 @@
 import UM_Blochsim as bs
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import matplotlib.cm as cm
+
+mpl.rcParams['animation.ffmpeg_path'] = '/opt/homebrew/bin/ffmpeg'
 
 from pulsegen import *
 
@@ -17,24 +22,28 @@ from pulsegen import *
 def main():
     ## --- SINGLE ISOCHROMAT --- ##
     # Sequence Parameters
-    TE = 20     # 20ms TE
-    ETL = 20    # 20 echos
-    PW = 2      
+    TE = 80     # 20ms TE
+    ETL = 8    # 20 echos
+    PW = 2   
+    time_pad = 5   
 
     # Simulation Parameters
     T = ETL * TE + (TE / 2)     # Total Simulation Durration in ms
-    dt = 0.1                    # Timestep in ms
+    dt = 0.01                    # Timestep in ms
     ntime = int(np.ceil(T / dt))
 
     # Tissue Parameters
-    T1 = 1000
-    T2 = 400
-
-    # Make time vector for plotting
-    time = np.arange(ntime) * dt
+    T1 = 800
+    T2 = 30
 
     # Create B1
     B = fse_pulsetrain(T, PW, ETL, TE, dt)
+    B = initial_pad(B, time_pad, dt)
+
+    ntime = B.shape[0]
+
+    # Make time vector for plotting
+    time = np.arange(ntime) * dt
 
     # Plot B1 (for sanity)
     plotB=True
@@ -48,7 +57,7 @@ def main():
         plt.show()
 
     # Simulate
-    plotM=False
+    plotM=True
     M = bs.blochsim_eul(B, T1, T2, dt, plot=plotM)
 
     # Display Signal
@@ -74,8 +83,8 @@ def main():
     vox_x = 10**-3
     vox_y = 10**-3
     vox_z = 10**-3
-    G_dur = 10
-    G_amp = 0.01
+    G_dur = 30
+    G_amp = 0.0005
 
     num_iso = 50
     iso_pos = np.zeros((num_iso, 3))
@@ -83,8 +92,10 @@ def main():
 
     # Make Gradient
     # TODO: Make Gradient Waveform
-    G = np.zeros((ntime, 3))
-    G[:, 2] = fse_freq_enc_grad(G_amp, G_dur, T, PW, ETL, TE, dt)
+    G_fe = fse_freq_enc_grad(G_amp, G_dur, T, PW, ETL, TE, dt)
+    G = np.zeros((G_fe.shape[0], 3))
+    G[:, 2] = G_fe
+    G = initial_pad(G, time_pad, dt)
 
     # Plot G (for sanity)
     plotG=True
@@ -102,7 +113,7 @@ def main():
     for n in range(num_iso):
         B_eff = B
         B_eff[:, 2] += np.sum(G * iso_pos[n, :], axis=1)
-        M_all[:, :, n] = bs.blochsim_eul(B_eff, T1, T2, dt)
+        M_all[:, :, n] = bs.blochsim_rk4(B_eff, T1, T2, dt)
 
     # Average over all isochromats:
     M_total = np.mean(M_all, axis=2)
@@ -121,8 +132,54 @@ def main():
         plt.plot(time, S_total, label="Observed Signal")
         plt.xlabel("Time [ms]")
         plt.ylabel("Signal")
-        plt.legend()
+        plt.title(f"FSE Signal Strength (T2 = {T2}ms)")
         plt.show()
+
+
+    dsamp = 50
+
+    # Colors
+    color_vec = np.linspace(0, 1, num_iso)
+
+    # ---- Set up figure ----
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlim([-1,1]); ax.set_ylim([-1,1]); ax.set_zlim([-1,1])
+    ax.set_box_aspect([1,1,1])
+    ax.set_xticks([]); ax.set_yticks([]); ax.set_zticks([])
+
+    ax.plot([-1, 1], [0, 0], [0, 0], color='black', linewidth=2)  # X-axis
+    ax.plot([0, 0], [-1, 1], [0, 0], color='black', linewidth=2)  # Y-axis
+    ax.plot([0, 0], [0, 0], [-1, 1], color='black', linewidth=2)  # Z-axis  
+
+    ax.text(1.1, 0, 0, 'X', fontsize=14)
+    ax.text(0, 1.1, 0, 'Y', fontsize=14)
+    ax.text(0, 0, 1.1, 'Z', fontsize=14)
+
+    # Quiver object
+    quiv = ax.quiver(
+        np.zeros(num_iso), np.zeros(num_iso), np.zeros(num_iso),   # tails
+        M_all[0,0,:], M_all[0,1,:], M_all[0,2,:],  # directions
+        length=1, normalize=False, cmap='jet'
+    )
+    quiv.set_array(color_vec)
+
+    # ---- Animation function ----
+    def update(frame):
+        nonlocal quiv
+        quiv.remove()   # remove old arrows
+        quiv = ax.quiver(
+            np.zeros(num_iso), np.zeros(num_iso), np.zeros(num_iso),
+            M_all[frame*dsamp,0,:], M_all[frame*dsamp,1,:], M_all[frame*dsamp,2,:],
+            length=1, normalize=False, cmap='jet'
+        )
+        quiv.set_array(color_vec)
+        return quiv,
+
+    anim = FuncAnimation(fig, update, frames=int(ntime / dsamp), interval=30, blit=False)
+
+    anim.save("SE.mp4", fps=30, dpi=150)
+    plt.show()
     
 
 
