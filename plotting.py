@@ -13,7 +13,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_iso_3D(M, save_path=None, display=False, dsamp=1):
+def plot_iso_3D(M, save_path=None, display=False, dsamp=1, yz_view=True):
     # Quick Check, if we do not need to display or save, nothing to be done.
     if (save_path == None) and (display == False):
         return
@@ -35,6 +35,10 @@ def plot_iso_3D(M, save_path=None, display=False, dsamp=1):
     ax.set_xlim([-1,1]); ax.set_ylim([-1,1]); ax.set_zlim([-1,1])
     ax.set_box_aspect([1,1,1])
     ax.set_xticks([]); ax.set_yticks([]); ax.set_zticks([])
+
+    # If we want the view along the yz axis, do this
+    if yz_view:
+        ax.view_init(0, 90)
 
     # Set the 3D Axes
     ax.plot([-1, 1], [0, 0], [0, 0], color='black', linewidth=2)  # X-axis

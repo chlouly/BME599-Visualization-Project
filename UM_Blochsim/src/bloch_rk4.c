@@ -15,10 +15,10 @@ void c_blochsim_rk4(//double *Mi,
 )   { 
     /* dt in ms (B timestep, not M. M timestep is h) */
     double h = 2 * dt;
-    printf("h:%lf\n", h);
+    //printf("h:%lf\n", h);
     int niter = nstep - (nstep % 2);
 
-    printf("T1: %lf   T2: %lf\n\n", T1, T2);
+    //printf("T1: %lf   T2: %lf\n\n", T1, T2);
 
     // T1 = dt / T1;
     // T2 = (1. - dt / T2);
@@ -34,7 +34,7 @@ void c_blochsim_rk4(//double *Mi,
     // Loop initialization
     //FILL(M_tmp, M)
 
-    PRINT_VEC(M_tmp);
+    //PRINT_VEC(M_tmp);
 
     int n;
     for (n = 0; n < niter - 2; n += 2) { // += 2 because we simulate t+2 and interpolate t+1
